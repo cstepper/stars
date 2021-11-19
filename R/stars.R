@@ -443,6 +443,7 @@ propagate_units = function(new, old) {
 #' tif = system.file("tif/L7_ETMs.tif", package = "stars")
 #' x = read_stars(tif)
 #' (new = c(x, x))
+#' (nmd = c(x, x, nms = c("a", "b")))
 #' c(new) # collapses two arrays into one with an additional dimension
 #' c(x, x, along = 3)
 c.stars = function(..., along = NA_integer_, try_hard = FALSE, nms = names(list(...)), tolerance = sqrt(.Machine$double.eps)) {
@@ -454,9 +455,16 @@ c.stars = function(..., along = NA_integer_, try_hard = FALSE, nms = names(list(
 	} else if (identical(along, NA_integer_)) { 
 		# Case 1: merge attributes of several objects by simply putting them together in a single stars object;
 		# dim does not change:
-		if (identical_dimensions(dots, tolerance = tolerance))
-			st_as_stars(do.call(c, lapply(dots, unclass)), dimensions = st_dimensions(dots[[1]]))
-		else {
+		if (identical_dimensions(dots, tolerance = tolerance)) {
+			mrg = st_as_stars(do.call(c, lapply(dots, unclass)), dimensions = st_dimensions(dots[[1]]))
+			if (is.null(nms)) {
+				mrg
+			} else if (length(mrg) == length(nms[!is.na(nms)])) {
+				setNames(mrg, nms)
+			} else {
+				stop("provided nms do not match length of combined stars object")
+			}
+		} else {
 			# currently catches only the special case of ... being a broken up time series:
 			along = sort_out_along(dots)
 			if (!is.na(along))
